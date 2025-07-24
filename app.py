@@ -18,8 +18,8 @@ if uploaded_file is not None:
 
     text_fixed = re.sub(r"(?<=[а-яіїєґ0-9])(?=[А-ЯІЇЄҐ])", " ", text)
 
-    years = re.findall(r"Звітнийрік[: ]?(\d{4})", text_fixed)
-    amounts = re.findall(r"Усьогозарік[: ]?([\d\.]+)грн", text_fixed)
+    years = re.findall(r"Звітний\s?рік[: ]?(\d{4})", text_fixed)
+    amounts = re.findall(r"Усього\s?зарік[: ]?([\d\.]+)грн", text_fixed)
     matches = list(zip(years, amounts))
 
     if matches:
@@ -29,6 +29,8 @@ if uploaded_file is not None:
             percent_7 = round(total * 0.07, 2)
             after = round(total - percent_7, 2)
             rows.append((year, total, percent_7, after))
+
+        rows.append(("Усього", round(total_all, 2), "", round(total_after_all, 2)))
 
         st.success("✅ Дані оброблено:")
         st.table(rows)
