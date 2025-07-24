@@ -38,7 +38,7 @@ if uploaded_file is not None:
     for i in range(1, len(blocks), 2):
         year = blocks[i]
         block_text = blocks[i + 1]
-        match = re.search(r"Усього за рік:\s*([\d\.]+)", block_text)
+        match = re.search(r"Усьогозарік[: ]?([\d,\.]+)", block_text.replace(" ", ""))
         if match:
             amount = float(match.group(1).replace(",", "."))
             yearly_data[year] = amount
