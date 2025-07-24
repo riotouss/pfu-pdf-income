@@ -24,11 +24,16 @@ if uploaded_file is not None:
 
     if matches:
         rows = [("Рік", "Сума", "7%", "Після вирахування")]
+        total_all = 0
+        total_after_all = 0
+
         for year, amount in matches:
             total = float(amount)
             percent_7 = round(total * 0.07, 2)
             after = round(total - percent_7, 2)
             rows.append((year, total, percent_7, after))
+            total_all += total
+            total_after_all += after
 
         rows.append(("Усього", round(total_all, 2), "", round(total_after_all, 2)))
 
@@ -36,4 +41,3 @@ if uploaded_file is not None:
         st.table(rows)
     else:
         st.warning("❗ Не знайдено сум за рік у файлі.")
-
