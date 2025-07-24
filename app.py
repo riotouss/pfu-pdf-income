@@ -1,9 +1,9 @@
 import streamlit as st
 import pdfplumber
 import re
+from collections import defaultdict
 
 st.set_page_config(page_title="📄 Розрахунок доходу з PDF")
-
 st.title("📄 Розрахунок доходу з довідки ПФУ")
 uploaded_file = st.file_uploader("Завантаж PDF-довідку", type="pdf")
 
@@ -14,21 +14,23 @@ if uploaded_file is not None:
     tmp_path = "uploaded_file.pdf"
 
     with pdfplumber.open(tmp_path) as pdf:
-        text = "".join([page.extract_text() for page in pdf.pages])
+        text = "\n".join([page.extract_text() or "" for page in pdf.pages])
 
-    text_fixed = re.sub(r"(?<=[а-яіїєґ0-9])(?=[А-ЯІЇЄҐ])", " ", text)
+    text_fixed = re.sub(r"(?<=[а-яА-ЯіїєґІЇЄҐ0-9])(?=[А-ЯІЇЄҐ])", " ", text)
 
-    years = re.findall(r"Звітний\s?рік[: ]?(\d{4})", text_fixed)
-    amounts = re.findall(r"Усього\s?зарік[: ]?([\d\.]+)грн", text_fixed)
-    matches = list(zip(years, amounts))
+    year_amount_matches = re.findall(r"Звітний рік: (\d{4}).*?Усього за рік:\s*([\d\.]+) грн", text_fixed, re.DOTALL)
 
-    if matches:
+    yearly_data = {}
+    for year, amount in year_amount_matches:
+        yearly_data[year] = float(amount.replace(",", "."))
+
+    if yearly_data:
         rows = [("Рік", "Сума", "7%", "Після вирахування")]
         total_all = 0
         total_after_all = 0
 
-        for year, amount in matches:
-            total = float(amount)
+        for year in sorted(yearly_data.keys()):
+            total = yearly_data[year]
             percent_7 = round(total * 0.07, 2)
             after = round(total - percent_7, 2)
             rows.append((year, total, percent_7, after))
