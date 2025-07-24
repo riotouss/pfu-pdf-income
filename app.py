@@ -13,12 +13,25 @@ if uploaded_file is not None:
     tmp_path = "uploaded_file.pdf"
 
     with pdfplumber.open(tmp_path) as pdf:
-        pages_text = [page.extract_text() or "" for page in pdf.pages]
-        full_text = "\n".join(pages_text)
-        
+        pages_text = []
+        for i, page in enumerate(pdf.pages):
+            page_text = page.extract_text() or ""
+            pages_text.append(page_text)
+            st.text(f"----- Сторінка {i+1} -----\n" + page_text[:1500]) 
+    full_text = "\n".join(pages_text)
+
     full_text = re.sub(r"(?<=[а-яА-Яіїєґ0-9])(?=[А-ЯІЇЄҐ])", " ", full_text)
-    
+
+    st.subheader("🔍 Debug: Увесь витягнутий текст")
+    st.text(full_text[:3000]) 
+
     blocks = re.split(r"Звітний рік: (\d{4})", full_text)
+
+    st.subheader("🔍 Debug: Розбиті блоки по роках")
+    for i in range(1, len(blocks), 2):
+        year = blocks[i]
+        content = blocks[i + 1][:800]  
+        st.markdown(f"**{year}**\n```\n{content}\n```")
 
     yearly_data = {}
 
@@ -29,6 +42,8 @@ if uploaded_file is not None:
         if match:
             amount = float(match.group(1).replace(",", "."))
             yearly_data[year] = amount
+        else:
+            st.warning(f"⚠️ Не знайдено суму за {year}")
 
     if yearly_data:
         rows = [("Рік", "Сума", "7%", "Після вирахування")]
@@ -48,4 +63,4 @@ if uploaded_file is not None:
         st.success("✅ Дані оброблено:")
         st.table(rows)
     else:
-        st.warning("❗ Не знайдено сум за рік у файлі.")
+        st.error("❌ Не знайдено жодної суми.")
