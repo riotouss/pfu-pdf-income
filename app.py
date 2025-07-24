@@ -17,31 +17,26 @@ if uploaded_file is not None:
         for i, page in enumerate(pdf.pages):
             page_text = page.extract_text() or ""
             pages_text.append(page_text)
-            st.text(f"----- Сторінка {i+1} -----\n" + page_text[:1500]) 
+
     full_text = "\n".join(pages_text)
-
     full_text = re.sub(r"(?<=[а-яА-Яіїєґ0-9])(?=[А-ЯІЇЄҐ])", " ", full_text)
-
-    st.subheader("🔍 Debug: Увесь витягнутий текст")
-    st.text(full_text[:3000]) 
-
-    blocks = re.split(r"Звітний рік: (\d{4})", full_text)
-
-    st.subheader("🔍 Debug: Розбиті блоки по роках")
-    for i in range(1, len(blocks), 2):
-        year = blocks[i]
-        content = blocks[i + 1][:800]  
-        st.markdown(f"**{year}**\n```\n{content}\n```")
+    blocks = re.split(r"Звітний\s*рік[: ]?\s*(\d{4})", full_text)
 
     yearly_data = {}
 
     for i in range(1, len(blocks), 2):
         year = blocks[i]
         block_text = blocks[i + 1]
-        match = re.search(r"Усьогозарік[: ]?([\d,\.]+)", block_text.replace(" ", ""))
+
+        cleaned_block = block_text.replace(" ", "")
+
+        match = re.search(r"Усьогозарік[:]?([\d\.]+)", cleaned_block)
         if match:
-            amount = float(match.group(1).replace(",", "."))
-            yearly_data[year] = amount
+            try:
+                amount = float(match.group(1).replace(",", "."))
+                yearly_data[year] = amount
+            except ValueError:
+                pass 
         else:
             st.warning(f"⚠️ Не знайдено суму за {year}")
 
