@@ -72,7 +72,7 @@ if uploaded_file is not None:
 
             rows.append((year, total, percent_7, after))
             total_all += total
-            total_after_all += after
+            total_after_all = after
 
         rows.append(("Усього", round(total_all, 2), "", round(total_after_all, 2)))
 
