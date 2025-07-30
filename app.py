@@ -32,7 +32,7 @@ if uploaded_file is not None:
         cleaned_block = block_text.replace(" ", "").replace("\n", "")
 
         match = re.search(r"Усьогозарік[:]?([\d\.]+)", cleaned_block)
-        
+
         if not match and i + 3 <= len(blocks):
             next_block = blocks[i + 3].replace(" ", "").replace("\n", "")
             match = re.search(r"Усьогозарік[:]?([\d\.]+)", next_block)
@@ -47,29 +47,33 @@ if uploaded_file is not None:
             st.warning(f"⚠️ Не знайдено суму за {year}")
 
     if yearly_data:
+        
+        all_years = list(range(min(map(int, yearly_data.keys())), current_year + 1))
+        for y in all_years:
+            if str(y) not in yearly_data:
+                yearly_data[str(y)] = 0.0
+
         rows = [("Рік", "Сума", "7%", "Після вирахування")]
         total_all = 0
         total_after_all = 0
         cumulative = 0
 
-        for year in sorted(yearly_data.keys()):
+        for year in sorted(yearly_data.keys(), key=int):
             total = yearly_data[year]
             year_int = int(year)
 
             if year_int < current_year:
-                cumulative = cumulative + total
                 percent_7 = round(total * 0.07, 2)
-                cumulative = cumulative * 0.93
-                after = round(cumulative, 2)
+                after = round(total * 0.93, 2)
             else:
-                cumulative += total
                 percent_7 = 0.00
-                after = round(cumulative, 2)
+                after = total
+
+            cumulative += after
 
             rows.append((year, total, percent_7, after))
             total_all += total
-            total_after_all = after
-            
+            total_after_all += after
 
         rows.append(("Усього", round(total_all, 2), "", round(total_after_all, 2)))
 
