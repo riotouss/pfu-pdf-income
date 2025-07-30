@@ -46,37 +46,41 @@ if uploaded_file is not None:
         else:
             st.warning(f"⚠️ Не знайдено суму за {year}")
 
-    if yearly_data:
+if yearly_data:
 
-        all_years = list(range(min(map(int, yearly_data.keys())), current_year + 1))
-        for y in all_years:
-            if str(y) not in yearly_data:
-                yearly_data[str(y)] = 0.0
+    all_years = list(range(min(map(int, yearly_data.keys())), current_year + 1))
+    for y in all_years:
+        if str(y) not in yearly_data:
+            yearly_data[str(y)] = 0.0
 
-        rows = [("Рік", "Сума", "7%", "Після вирахування")]
-        total_all = 0
-        total_after_all = 0
-        cumulative = 0
+    rows = [("Рік", "Сума", "7%", "Після вирахування")]
+    total_all = 0
+    cumulative = 0 
 
-        for year in sorted(yearly_data.keys(), key=int):
-            total = yearly_data[year]
-            year_int = int(year)
+    for year in sorted(yearly_data.keys(), key=int):
+        total = yearly_data[year]
+        year_int = int(year)
 
-            if year_int < current_year:
-                cumulative += total
-                percent_7 = round(cumulative * 0.07, 2)
-                after = round(cumulative * 0.93, 2)
-            else:
-                percent_7 = 0.0
-                after = cumulative + total
+        if year_int < current_year:
+            percent_7 = round(total * 0.07, 2)
+            after = round(total * 0.93, 2)
+        else:
+            percent_7 = 0.0
+            after = total
 
-            rows.append((year, total, percent_7, after))
-            total_all += total
-            total_after_all = after
+        cumulative += after
 
-        rows.append(("Усього", round(total_all, 2), "", round(total_after_all, 2)))
+        rows.append((year, total, percent_7, after))
+        total_all += total
 
-        st.success("✅ Дані оброблено:")
-        st.table(rows)
-    else:
-        st.error("❌ Не знайдено жодної суми.")
+    total_after_all = round(cumulative, 2)
+
+    rows.append(("Усього", round(total_all, 2), "", total_after_all))
+
+    st.success("✅ Дані оброблено:")
+    st.table(rows)
+
+    st.write(f"Загальна сума до вирахування: {round(total_all, 2)} грн")
+    st.write(f"Загальна сума після вирахування 7% (за всі роки, крім поточного): {total_after_all} грн")
+else:
+    st.error("❌ Не знайдено жодної суми.")
