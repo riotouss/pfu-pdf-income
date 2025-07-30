@@ -1,10 +1,13 @@
 import streamlit as st
 import pdfplumber
 import re
+from datetime import datetime
 
 st.set_page_config(page_title="📄 Розрахунок доходу з PDF")
 st.title("📄 Розрахунок доходу з довідки ПФУ")
 uploaded_file = st.file_uploader("Завантаж PDF-довідку", type="pdf")
+
+current_year = datetime.now().year
 
 if uploaded_file is not None:
     with open("uploaded_file.pdf", "wb") as f:
@@ -50,11 +53,19 @@ if uploaded_file is not None:
 
         for year in sorted(yearly_data.keys()):
             total = yearly_data[year]
-            percent_7 = round(total * 0.07, 2)
-            after = round(total - percent_7, 2)
+            year_int = int(year)
+
+            if year_int == current_year:
+                percent_7 = 0.00
+                after = total
+            else:
+                percent_7 = round(total * 0.07, 2)
+                after = round(total - percent_7, 2)
+
             rows.append((year, total, percent_7, after))
             total_all += total
             total_after_all += after
+            
 
         rows.append(("Усього", round(total_all, 2), "", round(total_after_all, 2)))
 
