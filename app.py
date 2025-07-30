@@ -47,7 +47,7 @@ if uploaded_file is not None:
             st.warning(f"⚠️ Не знайдено суму за {year}")
 
     if yearly_data:
-        
+
         all_years = list(range(min(map(int, yearly_data.keys())), current_year + 1))
         for y in all_years:
             if str(y) not in yearly_data:
@@ -59,17 +59,16 @@ if uploaded_file is not None:
         cumulative = 0
 
         for year in sorted(yearly_data.keys(), key=int):
-            total = yearly_data[year]
-            year_int = int(year)
+    total = yearly_data[year]
+    year_int = int(year)
 
-            if year_int < current_year:
-                percent_7 = round(total * 0.07, 2)
-                after = round(total * 0.93, 2)
-            else:
-                percent_7 = 0.00
-                after = total
-
-            cumulative += after
+        if year_int < current_year:
+            cumulative += total
+            percent_7 = round(cumulative * 0.07, 2)
+            after = round(cumulative * 0.93, 2)
+        else:
+            percent_7 = 0.0
+            after = cumulative + total
 
             rows.append((year, total, percent_7, after))
             total_all += total
