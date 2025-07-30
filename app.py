@@ -50,21 +50,25 @@ if uploaded_file is not None:
         rows = [("Рік", "Сума", "7%", "Після вирахування")]
         total_all = 0
         total_after_all = 0
+        cumulative = 0
 
         for year in sorted(yearly_data.keys()):
             total = yearly_data[year]
             year_int = int(year)
 
-            if year_int == current_year:
-                percent_7 = 0.00
-                after = total
-            else:
+            if year_int < current_year:
+                cumulative = cumulative + total
                 percent_7 = round(total * 0.07, 2)
-                after = round(total - percent_7, 2)
+                cumulative = cumulative * 0.93
+                after = round(cumulative, 2)
+            else:
+                cumulative += total
+                percent_7 = 0.00
+                after = round(cumulative, 2)
 
             rows.append((year, total, percent_7, after))
             total_all += total
-            total_after_all += after
+            total_after_all = after
             
 
         rows.append(("Усього", round(total_all, 2), "", round(total_after_all, 2)))
