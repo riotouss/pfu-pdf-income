@@ -46,7 +46,7 @@ if uploaded_file is not None:
         else:
             st.warning(f"⚠️ Не знайдено суму за {year}")
 
-if yearly_data:
+    if yearly_data:
 
     all_years = list(range(min(map(int, yearly_data.keys())), current_year + 1))
     for y in all_years:
@@ -55,7 +55,7 @@ if yearly_data:
 
     rows = [("Рік", "Сума", "7%", "Після вирахування")]
     total_all = 0
-    cumulative = 0 
+    cumulative = 0  
 
     for year in sorted(yearly_data.keys(), key=int):
         total = yearly_data[year]
@@ -82,5 +82,5 @@ if yearly_data:
 
     st.write(f"Загальна сума до вирахування: {round(total_all, 2)} грн")
     st.write(f"Загальна сума після вирахування 7% (за всі роки, крім поточного): {total_after_all} грн")
-else:
+    else:
     st.error("❌ Не знайдено жодної суми.")
