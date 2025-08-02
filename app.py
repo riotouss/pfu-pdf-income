@@ -130,7 +130,7 @@ if uploaded_file is not None:
             form_match = re.search(r"ОК[-–— ]?\s*(\d+)", line_nospace)
             if form_match:
                 doc_type = f"ОК-{form_match.group(1)}"
-                break 
+                break  
 
         total_copy_sum = round(sum(data["total_year"] for year, data in yearly_data.items() if int(year) <= current_year), 2)
        
@@ -148,32 +148,38 @@ if uploaded_file is not None:
         st.markdown("📎 **Коментар для фіксації документу:**")
 
         components.html(f"""
-            <div style="margin-bottom: 10px;">
-                <input type="text" value="{copy_text}" id="copyTextField" readonly
+            <div style="margin-bottom: 16px;">
+                <div style="
+                    background-color: #1e1e1e;
+                    border: 1px solid #333;
+                    border-radius: 8px;
+                    padding: 12px 16px;
+                    font-size: 16px;
+                    color: white;
+                    margin-bottom: 10px;
+                    box-shadow: 0 2px 5px rgba(0,0,0,0.25);
+                    font-family: 'Segoe UI', sans-serif;
+                " id="copyTextField">{copy_text}</div>
+
+                <button onclick="navigator.clipboard.writeText(document.getElementById('copyTextField').innerText)"
                     style="
-                        padding: 10px;
-                        font-size: 16px;
-                        width: 100%;
-                        border: 1px solid var(--secondary-background-color, #444);
-                        border-radius: 5px;
-                        margin-bottom: 8px;
-                        background-color: transparent;
+                        background-color: #4CAF50;
                         color: white;
-                    ">
-                <button onclick="navigator.clipboard.writeText(document.getElementById('copyTextField').value)"
-                    style="
-                        background-color: var(--primary-color, #4CAF50);
-                        color: white;
-                        padding: 8px 16px;
+                        padding: 10px 18px;
                         border: none;
-                        border-radius: 5px;
+                        border-radius: 6px;
                         cursor: pointer;
                         font-size: 16px;
-                    ">
+                        transition: background-color 0.2s ease;
+                        font-family: 'Segoe UI', sans-serif;
+                    "
+                    onmouseover="this.style.backgroundColor='#45a049'"
+                    onmouseout="this.style.backgroundColor='#4CAF50'">
                     📋 Скопіювати
                 </button>
             </div>
-        """, height=100)
+        """, height=150)
+
 
 
         if show_extra:
