@@ -4,7 +4,7 @@ import re
 import io
 from datetime import datetime
 
-st.set_page_config(page_title="📄 Розрахунок доходу з PDF")
+st.set_page_config(page_title="Розрахунок доходу з PDF")
 st.title("📄 Розрахунок доходу з довідки ПФУ")
 uploaded_file = st.file_uploader("Завантаж PDF-довідку", type="pdf")
 
@@ -70,15 +70,15 @@ if uploaded_file is not None:
 
             if year_int == current_year:
                 percent_7 = 0.0
-                after = f"{round(accumulated, 2)} + (дохід за {year} рік: {round(total_year, 2)} грн, без вирах. 7%)"
-                explain = f"Сума за {year} рік: {round(total_year, 2)} грн (без вирахування 7%, бо рік ще не завершено)"
+                after = f"{round(accumulated, 2)} + (дохід за {year} р.: {round(total_year, 2)} грн, без вирах. 7%)"
+                explain = f"Сума за {year} р.: {round(total_year, 2)} грн (без вирахування 7%, бо рік ще не завершено)"
             elif total_year == 0:
                 combined = accumulated
                 percent_7 = round(combined * 0.07, 2)
                 accumulated = round(combined * 0.93, 2)
                 after = accumulated
                 explain = (
-                    f"Сума за попередні роки + сума за {year} рік = {combined} + 0 = {combined}\n"
+                    f"Сума за попередні роки + сума за {year} р. = {combined} + 0 = {combined}\n"
                     f"Вираховуємо 7%: {combined} * 0.93 = {accumulated}"
                 )
             else:
@@ -87,7 +87,7 @@ if uploaded_file is not None:
                 accumulated = round(combined * 0.93, 2)
                 after = accumulated
                 explain = (
-                    f"Сума за попередні роки + сума за {year} рік = {round(combined - total_year, 2)} + {round(total_year, 2)} = {round(combined, 2)}\n"
+                    f"Сума за попередні роки + сума за {year} р. = {round(combined - total_year, 2)} + {round(total_year, 2)} = {round(combined, 2)}\n"
                     f"Вираховуємо 7%: {round(combined, 2)} * 0.93 = {accumulated}"
                 )
 
@@ -99,7 +99,7 @@ if uploaded_file is not None:
         rows_main.append((
             "Усього",
             round(total_all, 2),
-            f"{round(accumulated, 2)} + (дохід за {current_year} рік: {round(last_year_val, 2)} грн, без вирах. 7%)"
+            f"{round(accumulated, 2)} + (дохід за {current_year} р.: {round(last_year_val, 2)} грн, без вирах. 7%)"
         ))
 
         st.success("✅ Дані оброблено:")
@@ -122,9 +122,54 @@ if uploaded_file is not None:
             f"Сума після вирахування 7% (за всі роки, крім поточного): **{round(accumulated, 2)} грн** + Дохід за поточний ({current_year}) рік — **{round(last_year_val, 2)} грн**"
         )
 
+        # 🔧 Виправлений блок для копіювання — через перебір рядків
+        doc_type = "ОК-?"
+
+        for line in full_text.split("\n"):
+            line_nospace = line.replace(" ", "").upper()
+            form_match = re.search(r"ОК[-–— ]?\s*(\d+)", line_nospace)
+            if form_match:
+                doc_type = f"ОК-{form_match.group(1)}"
+                break  # Знайшли — виходимо
+
+        # Розрахунок суми
+        total_copy_sum = round(sum(data["total_year"] for year, data in yearly_data.items() if int(year) <= current_year), 2)
+
+        # Формування діапазону років
+       
+        years_present = sorted(map(int, yearly_data.keys()))
+        first_year = years_present[0]
+        last_year = current_year if current_year in years_present else years_present[-1]
+
+
+        if first_year == last_year:
+            year_range = f"{first_year}"
+        else:
+            year_range = f"{first_year}-{last_year}"
+        copy_text = f'{doc_type}, {year_range} р., {total_copy_sum} грн'
+
+        st.markdown("📎 **Коментар для фіксації документу:**")
+        st.code(copy_text, language="")
+
+        st.markdown(f"""
+            <button onclick="navigator.clipboard.writeText('{copy_text}')"
+                    style="
+                        background-color: #4CAF50;
+                        color: white;
+                        padding: 8px 16px;
+                        margin-top: 5px;
+                        border: none;
+                        border-radius: 5px;
+                        cursor: pointer;
+                        font-size: 16px;
+                    ">
+                📋 Скопіювати
+            </button>
+        """, unsafe_allow_html=True)
+
+
         if show_extra:
             st.subheader("🔢 Пояснення розрахунку")
-
             html_table = """
             <style>
             .responsive-table {
