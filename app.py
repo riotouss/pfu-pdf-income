@@ -2,6 +2,7 @@ import streamlit as st
 import pdfplumber
 import re
 import io
+import streamlit.components.v1 as components
 from datetime import datetime
 
 st.set_page_config(page_title="Розрахунок доходу з PDF")
@@ -122,7 +123,6 @@ if uploaded_file is not None:
             f"Сума після вирахування 7% (за всі роки, крім поточного): **{round(accumulated, 2)} грн** + Дохід за поточний ({current_year}) рік — **{round(last_year_val, 2)} грн**"
         )
 
-        # 🔧 Виправлений блок для копіювання — через перебір рядків
         doc_type = "ОК-?"
 
         for line in full_text.split("\n"):
@@ -130,12 +130,9 @@ if uploaded_file is not None:
             form_match = re.search(r"ОК[-–— ]?\s*(\d+)", line_nospace)
             if form_match:
                 doc_type = f"ОК-{form_match.group(1)}"
-                break  # Знайшли — виходимо
+                break 
 
-        # Розрахунок суми
         total_copy_sum = round(sum(data["total_year"] for year, data in yearly_data.items() if int(year) <= current_year), 2)
-
-        # Формування діапазону років
        
         years_present = sorted(map(int, yearly_data.keys()))
         first_year = years_present[0]
@@ -149,23 +146,34 @@ if uploaded_file is not None:
         copy_text = f'{doc_type}, {year_range} р., {total_copy_sum} грн'
 
         st.markdown("📎 **Коментар для фіксації документу:**")
-        st.code(copy_text, language="")
 
-        st.markdown(f"""
-            <button onclick="navigator.clipboard.writeText('{copy_text}')"
+        components.html(f"""
+            <div style="margin-bottom: 10px;">
+                <input type="text" value="{copy_text}" id="copyTextField" readonly
                     style="
-                        background-color: #4CAF50;
+                        padding: 10px;
+                        font-size: 16px;
+                        width: 100%;
+                        border: 1px solid var(--secondary-background-color, #444);
+                        border-radius: 5px;
+                        margin-bottom: 8px;
+                        background-color: transparent;
+                        color: white;
+                    ">
+                <button onclick="navigator.clipboard.writeText(document.getElementById('copyTextField').value)"
+                    style="
+                        background-color: var(--primary-color, #4CAF50);
                         color: white;
                         padding: 8px 16px;
-                        margin-top: 5px;
                         border: none;
                         border-radius: 5px;
                         cursor: pointer;
                         font-size: 16px;
                     ">
-                📋 Скопіювати
-            </button>
-        """, unsafe_allow_html=True)
+                    📋 Скопіювати
+                </button>
+            </div>
+        """, height=100)
 
 
         if show_extra:
