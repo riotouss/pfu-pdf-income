@@ -123,30 +123,41 @@ if uploaded_file is not None:
             f"Сума після вирахування 7% (за всі роки, крім поточного): **{round(accumulated, 2)} грн** + Дохід за поточний ({current_year}) рік — **{round(last_year_val, 2)} грн**"
         )
 
+        # 🔧 Копіювання: Форма + ПІБ + Роки
         doc_type = "ОК-?"
+        pib = "Невідомо"
 
         for line in full_text.split("\n"):
             line_nospace = line.replace(" ", "").upper()
             form_match = re.search(r"ОК[-–— ]?\s*(\d+)", line_nospace)
             if form_match:
                 doc_type = f"ОК-{form_match.group(1)}"
-                break  
 
-        total_copy_sum = round(sum(data["total_year"] for year, data in yearly_data.items() if int(year) <= current_year), 2)
-       
+            if "Прізвище" in line and "по батькові" in line:
+                match = re.search(r"по батькові[:\s]*([А-ЯІЇЄҐа-яіїєґ\s\-']+)", line)
+                if match:
+                    pib_candidate = match.group(1).strip()
+                    words = pib_candidate.split()
+                    if len(words) >= 3:
+                        pib = " ".join(words[:3]).title()
+
+        # Роки тільки з фактичних
         years_present = sorted(map(int, yearly_data.keys()))
-        first_year = years_present[0]
-        last_year = current_year if current_year in years_present else years_present[-1]
+        max_valid_year = max(y for y in years_present if yearly_data[str(y)]["total_year"] > 0)
+        min_valid_year = min(y for y in years_present if yearly_data[str(y)]["total_year"] > 0)
 
-
-        if first_year == last_year:
-            year_range = f"{first_year}"
+        if min_valid_year == max_valid_year:
+            year_range = f"{min_valid_year}"
         else:
-            year_range = f"{first_year}-{last_year}"
+            year_range = f"{min_valid_year}-{max_valid_year}"
+
+        total_copy_sum = round(sum(
+            data["total_year"] for year, data in yearly_data.items() if min_valid_year <= int(year) <= max_valid_year
+        ), 2)
+
         copy_text = f'{doc_type}, {year_range} р., {total_copy_sum} грн'
 
         st.markdown("📎 **Коментар для фіксації документу:**")
-
         components.html(f"""
             <div style="margin-bottom: 16px;">
                 <div style="
@@ -179,8 +190,6 @@ if uploaded_file is not None:
                 </button>
             </div>
         """, height=150)
-
-
 
         if show_extra:
             st.subheader("🔢 Пояснення розрахунку")
