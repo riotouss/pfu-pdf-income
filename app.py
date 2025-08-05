@@ -123,7 +123,6 @@ if uploaded_file is not None:
             f"Сума після вирахування 7% (за всі роки, крім поточного): **{round(accumulated, 2)} грн** + Дохід за поточний ({current_year}) рік — **{round(last_year_val, 2)} грн**"
         )
 
-        # 🔧 Копіювання: Форма + ПІБ + Роки
         doc_type = "ОК-?"
         pib = "Невідомо"
 
@@ -141,7 +140,6 @@ if uploaded_file is not None:
                     if len(words) >= 3:
                         pib = " ".join(words[:3]).title()
 
-        # Роки тільки з фактичних
         years_present = sorted(map(int, yearly_data.keys()))
         max_valid_year = max(y for y in years_present if yearly_data[str(y)]["total_year"] > 0)
         min_valid_year = min(y for y in years_present if yearly_data[str(y)]["total_year"] > 0)
