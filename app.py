@@ -124,21 +124,12 @@ if uploaded_file is not None:
         )
 
         doc_type = "ОК-?"
-        pib = "Невідомо"
 
         for line in full_text.split("\n"):
             line_nospace = line.replace(" ", "").upper()
             form_match = re.search(r"ОК[-–— ]?\s*(\d+)", line_nospace)
             if form_match:
                 doc_type = f"ОК-{form_match.group(1)}"
-
-            if "Прізвище" in line and "по батькові" in line:
-                match = re.search(r"по батькові[:\s]*([А-ЯІЇЄҐа-яіїєґ\s\-']+)", line)
-                if match:
-                    pib_candidate = match.group(1).strip()
-                    words = pib_candidate.split()
-                    if len(words) >= 3:
-                        pib = " ".join(words[:3]).title()
 
         years_present = sorted(map(int, yearly_data.keys()))
         max_valid_year = max(y for y in years_present if yearly_data[str(y)]["total_year"] > 0)
@@ -153,7 +144,16 @@ if uploaded_file is not None:
             data["total_year"] for year, data in yearly_data.items() if min_valid_year <= int(year) <= max_valid_year
         ), 2)
 
-        copy_text = f'{doc_type}, {year_range} р., {total_copy_sum} грн'
+        last_year_val = yearly_data[str(current_year)]["total_year"]
+
+        total_after_7 = round(accumulated + last_year_val, 2)
+
+        copy_text = (
+            f"Надано {doc_type} за період {year_range}; "
+            f"загальна сума {total_copy_sum} грн; "
+            f"з урахуванням 7% {total_after_7} грн"
+        )
+
 
         st.markdown("📎 **Коментар для фіксації документу:**")
         components.html(f"""
