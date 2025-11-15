@@ -16,7 +16,9 @@ if uploaded_file is not None:
         pages_text = [page.extract_text() or "" for page in pdf.pages]
 
     full_text = "\n".join(pages_text)
+
     full_text = re.sub(r"(?<=[а-яА-Яїєґ\d])(?=[А-ЯІЇЄҐ])", " ", full_text)
+
     blocks = re.split(r"Звітний\s*рік[: ]?\s*(\d{4})", full_text)
 
     yearly_data = {}
@@ -27,7 +29,6 @@ if uploaded_file is not None:
         cleaned_block = block_text.replace(" ", "").replace("\n", "")
 
         match_year = re.search(r"Усьогозарік[:]?(\d+[\s\.,\d]*)", cleaned_block)
-        match_cumulative = re.search(r"Усьогозарікзурахуваннямминулихроків[:]?(\d+[\s\.,\d]*)", cleaned_block)
 
         if match_year:
             try:
@@ -38,90 +39,47 @@ if uploaded_file is not None:
             total_year = 0.0
             st.warning(f"⚠️ Не знайдено суму за рік {year}")
 
-        if match_cumulative:
-            try:
-                total_cumulative = float(match_cumulative.group(1).replace(" ", "").replace(",", "."))
-            except ValueError:
-                total_cumulative = total_year
-        else:
-            total_cumulative = total_year
-
-        yearly_data[year] = {
-            "total_year": total_year,
-            "total_cumulative": total_cumulative
-        }
+        yearly_data[year] = {"total_year": total_year}
 
     if yearly_data:
         all_years = list(range(min(map(int, yearly_data.keys())), current_year + 1))
         for y in all_years:
             if str(y) not in yearly_data:
-                yearly_data[str(y)] = {"total_year": 0.0, "total_cumulative": 0.0}
+                yearly_data[str(y)] = {"total_year": 0.0}
 
-        rows_main = [("Рік", "Сума за рік", "Після вирахування 7 %")]
+        rows_main = [("Рік", "Сума за рік", "Після -7%")]
         rows_7percent = [("Рік", "7% від суми")]
         rows_explain = [("Рік", "Як проводився розрахунок")]
 
-        total_all = 0.0
-        accumulated = 0.0
+        total_after_all_years = 0.0
+        total_all_years = 0.0
 
         for year in sorted(yearly_data.keys(), key=int):
-            year_int = int(year)
             total_year = yearly_data[year]["total_year"]
-            total_all += total_year
+            total_all_years += total_year
 
-            if year_int == current_year:
-                percent_7 = 0.0
-                after = f"{round(accumulated, 2)} + (дохід за {year} р.: {round(total_year, 2)} грн, без вирах. 7%)"
-                explain = f"Сума за {year} р.: {round(total_year, 2)} грн (без вирахування 7%, бо рік ще не завершено)"
-            elif total_year == 0:
-                combined = accumulated
-                percent_7 = round(combined * 0.07, 2)
-                accumulated = round(combined * 0.93, 2)
-                after = accumulated
-                explain = (
-                    f"Сума за попередні роки + сума за {year} р. = {combined} + 0 = {combined}\n"
-                    f"Вираховуємо 7%: {combined} * 0.93 = {accumulated}"
-                )
-            else:
-                combined = accumulated + total_year
-                percent_7 = round(combined * 0.07, 2)
-                accumulated = round(combined * 0.93, 2)
-                after = accumulated
-                explain = (
-                    f"Сума за попередні роки + сума за {year} р. = {round(combined - total_year, 2)} + {round(total_year, 2)} = {round(combined, 2)}\n"
-                    f"Вираховуємо 7%: {round(combined, 2)} * 0.93 = {accumulated}"
-                )
+            percent_7 = round(total_year * 0.07, 2)
+            after_7 = round(total_year * 0.93, 2)
 
-            rows_main.append((year, round(total_year, 2), after))
+            total_after_all_years += after_7
+
+            rows_main.append((year, round(total_year, 2), after_7))
             rows_7percent.append((year, percent_7))
-            rows_explain.append((year, explain))
+            rows_explain.append((year, f"{round(total_year, 2)} грн - 7% = {after_7} грн"))
 
-        last_year_val = yearly_data[str(current_year)]["total_year"]
-        rows_main.append((
-            "Усього",
-            round(total_all, 2),
-            f"{round(accumulated, 2)} + (дохід за {current_year} р.: {round(last_year_val, 2)} грн, без вирах. 7%)"
-        ))
+        rows_main.append(("Усього", round(total_all_years, 2), round(total_after_all_years, 2)))
 
         st.success("✅ Дані оброблено:")
 
-        show_extra = st.checkbox("📊 Показати пояснення розрахунку 7%", value=False)
-
         st.subheader("📋 Основна таблиця")
-        st.markdown("""
-            <style>
-            .element-container:has(table) table td {
-                white-space: nowrap;
-            }
-            </style>
-        """, unsafe_allow_html=True)
         st.table(rows_main)
 
-        st.markdown(f"<div style='font-size: 1.8em; font-weight: bold;'>Загальна сума за всі роки: {round(total_all, 2)} грн</div>", unsafe_allow_html=True)
-
-        st.write(
-            f"Сума після вирахування 7% (за всі роки, крім поточного): **{round(accumulated, 2)} грн** + Дохід за поточний ({current_year}) рік — **{round(last_year_val, 2)} грн**"
+        st.markdown(
+            f"<div style='font-size: 1.8em; font-weight: bold;'>Загальна сума за всі роки: {round(total_all_years, 2)} грн</div>",
+            unsafe_allow_html=True,
         )
+
+        st.write(f"Сума після вирахування 7% за всі роки: **{round(total_after_all_years, 2)} грн**")
 
         doc_type = "ОК-?"
 
@@ -135,25 +93,19 @@ if uploaded_file is not None:
         max_valid_year = max(y for y in years_present if yearly_data[str(y)]["total_year"] > 0)
         min_valid_year = min(y for y in years_present if yearly_data[str(y)]["total_year"] > 0)
 
-        if min_valid_year == max_valid_year:
-            year_range = f"{min_valid_year}"
-        else:
-            year_range = f"{min_valid_year}-{max_valid_year}"
+        year_range = f"{min_valid_year}" if min_valid_year == max_valid_year else f"{min_valid_year}-{max_valid_year}"
 
         total_copy_sum = round(sum(
-            data["total_year"] for year, data in yearly_data.items() if min_valid_year <= int(year) <= max_valid_year
+            yearly_data[str(year)]["total_year"] for year in range(min_valid_year, max_valid_year + 1)
         ), 2)
 
-        last_year_val = yearly_data[str(current_year)]["total_year"]
-
-        total_after_7 = round(accumulated + last_year_val, 2)
+        total_after_copy = round(total_after_all_years, 2)
 
         copy_text = (
             f"Надано {doc_type} за період {year_range}; "
             f"загальна сума {total_copy_sum} грн; "
-            f"з урахуванням 7% {total_after_7} грн"
+            f"з урахуванням 7% {total_after_copy} грн"
         )
-
 
         st.markdown("📎 **Коментар для фіксації документу:**")
         components.html(f"""
@@ -167,7 +119,6 @@ if uploaded_file is not None:
                     color: white;
                     margin-bottom: 10px;
                     box-shadow: 0 2px 5px rgba(0,0,0,0.25);
-                    font-family: 'Segoe UI', sans-serif;
                 " id="copyTextField">{copy_text}</div>
 
                 <button onclick="navigator.clipboard.writeText(document.getElementById('copyTextField').innerText)"
@@ -179,47 +130,17 @@ if uploaded_file is not None:
                         border-radius: 6px;
                         cursor: pointer;
                         font-size: 16px;
-                        transition: background-color 0.2s ease;
-                        font-family: 'Segoe UI', sans-serif;
-                    "
-                    onmouseover="this.style.backgroundColor='#45a049'"
-                    onmouseout="this.style.backgroundColor='#4CAF50'">
+                    ">
                     📋 Скопіювати
                 </button>
             </div>
         """, height=150)
 
+        show_extra = st.checkbox("📊 Показати пояснення розрахунку 7%")
+
         if show_extra:
             st.subheader("🔢 Пояснення розрахунку")
-            html_table = """
-            <style>
-            .responsive-table {
-                border-collapse: collapse;
-                width: 100%;
-                table-layout: auto;
-            }
-            .responsive-table th, .responsive-table td {
-                border: 1px solid #ccc;
-                padding: 8px;
-                text-align: left;
-                vertical-align: top;
-                word-break: break-word;
-                white-space: pre-wrap;
-            }
-            .responsive-table th {
-                background-color: #f9f9f9;
-            }
-            </style>
-            <table class="responsive-table">
-                <thead><tr><th>Рік</th><th>Як проводився розрахунок</th></tr></thead>
-                <tbody>
-            """
-            for year, explanation in rows_explain[1:]:
-                explanation_html = explanation.replace("\n", "<br>")
-                html_table += f"<tr><td>{year}</td><td>{explanation_html}</td></tr>"
-            html_table += "</tbody></table>"
+            st.table(rows_explain)
 
-            st.markdown(html_table, unsafe_allow_html=True)
-
-            st.subheader("📉 7% від суми")
+            st.subheader("📉 7% від кожного року")
             st.table(rows_7percent)
